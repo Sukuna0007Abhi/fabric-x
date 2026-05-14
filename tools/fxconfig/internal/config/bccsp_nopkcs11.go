@@ -12,6 +12,11 @@ import (
 	"github.com/hyperledger/fabric-lib-go/bccsp/factory"
 )
 
+// pkcs11Supported reports whether this build of fxconfig was compiled with
+// the pkcs11 build tag.
+const pkcs11Supported = false
+
 // applyPKCS11Opts is a no-op when fxconfig is built without the pkcs11 tag.
-// PKCS#11 support is opt-in and requires building with -tags pkcs11.
+// MSPConfig.Validate rejects bccsp.default=PKCS11 in non-pkcs11 builds before
+// this is reached on the happy path.
 func applyPKCS11Opts(_ *factory.FactoryOpts, _ BCCSPPKCS11Config) {}

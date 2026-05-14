@@ -15,14 +15,13 @@ import (
 	"github.com/hyperledger/fabric-lib-go/bccsp/pkcs11"
 )
 
-// applyPKCS11Opts maps fxconfig PKCS#11 settings onto the Fabric factory options.
-// When BCCSP.PKCS11.Library is set the factory is switched to the PKCS11 provider.
-func applyPKCS11Opts(opts *factory.FactoryOpts, cfg BCCSPPKCS11Config) {
-	if cfg.Library == "" {
-		return
-	}
+// pkcs11Supported reports whether this build of fxconfig was compiled with
+// the pkcs11 build tag.
+const pkcs11Supported = true
 
-	opts.Default = "PKCS11"
+// applyPKCS11Opts populates the PKCS#11 sub-section of the Fabric factory
+// options. Caller is responsible for setting opts.Default = "PKCS11".
+func applyPKCS11Opts(opts *factory.FactoryOpts, cfg BCCSPPKCS11Config) {
 	opts.PKCS11 = &pkcs11.PKCS11Opts{
 		Library:        cfg.Library,
 		Label:          cfg.Label,

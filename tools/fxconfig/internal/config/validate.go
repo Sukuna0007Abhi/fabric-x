@@ -18,7 +18,8 @@ import (
 )
 
 // Validate validates MSP configuration.
-// Ensures both LocalMspID and ConfigPath are specified.
+// Ensures both LocalMspID and ConfigPath are specified, and that the
+// configured BCCSP provider is supported by this build.
 func (c *MSPConfig) Validate(vctx validation.Context) error {
 	if err := errorIfEmpty(c.LocalMspID, "must not be empty"); err != nil {
 		return fmt.Errorf("invalid localMspID: %w", err)
@@ -28,7 +29,33 @@ func (c *MSPConfig) Validate(vctx validation.Context) error {
 		return fmt.Errorf("invalid configPath: %w", err)
 	}
 
+	if err := validateBCCSPDefault(c.BCCSP.Default); err != nil {
+		return fmt.Errorf("invalid bccsp configuration: %w", err)
+	}
+
 	return nil
+}
+
+// validateBCCSPDefault rejects unknown bccsp.default values and PKCS11 when
+// the binary was built without the pkcs11 tag.
+func validateBCCSPDefault(provider string) error {
+	switch provider {
+	case "", BCCSPProviderSW:
+		return nil
+	case BCCSPProviderPKCS11:
+		if !pkcs11Supported {
+			return fmt.Errorf(
+				"bccsp.default=%q requires building fxconfig with -tags pkcs11",
+				provider,
+			)
+		}
+		return nil
+	default:
+		return fmt.Errorf(
+			"bccsp.default %q is not supported (must be one of %q, %q)",
+			provider, BCCSPProviderSW, BCCSPProviderPKCS11,
+		)
+	}
 }
 
 // Validate validates Orderer configuration.

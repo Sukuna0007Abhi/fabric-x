@@ -152,26 +152,41 @@ notifications:
 
 By default fxconfig uses the software BCCSP with a file-based keystore. To
 sign with keys stored in an HSM (or any PKCS#11 token such as SoftHSM2),
-build fxconfig with `-tags pkcs11` and configure the `msp.bccsp.pkcs11`
-section:
+build fxconfig with `-tags pkcs11`, set `msp.bccsp.default` to `PKCS11`, and
+configure the `msp.bccsp.pkcs11` section:
 
 ```yaml
 msp:
   localMspID: Org1MSP
   configPath: /path/to/msp
   bccsp:
+    default: PKCS11
     pkcs11:
       library: /usr/local/lib/libsofthsm2.so
       label: TokenLabel
-      pin: ${HSM_PIN}
+      pin: "1234"
       hash: SHA2       # optional, defaults to SHA2
       security: 256    # optional, defaults to 256
       softwareVerify: true  # optional
 ```
 
-When `pkcs11.library` is non-empty, the signer loads keys from the HSM and
-the `sw` / `fileKeyStore` section is ignored. Without `-tags pkcs11` the
-`pkcs11` block is accepted but has no effect (the SW provider is used).
+fxconfig does not perform shell-style variable expansion on YAML values, so
+do not write `pin: ${HSM_PIN}` expecting it to be substituted. To avoid
+committing the pin to the config file, set it via environment variable
+(see [Environment Variables](#environment-variables)), e.g.
+
+```bash
+export FXCONFIG_MSP_BCCSP_PKCS11_PIN=1234
+export FXCONFIG_MSP_BCCSP_PKCS11_LIBRARY=/usr/local/lib/libsofthsm2.so
+export FXCONFIG_MSP_BCCSP_PKCS11_LABEL=TokenLabel
+```
+
+Every field under `msp.bccsp` is overridable via `FXCONFIG_MSP_BCCSP_*` (for
+example `FXCONFIG_MSP_BCCSP_DEFAULT`, `FXCONFIG_MSP_BCCSP_SW_HASH`).
+
+When `msp.bccsp.default` is `PKCS11`, the signer loads keys from the HSM and
+the `sw` / `fileKeyStore` section is ignored. Selecting `PKCS11` in a binary
+that was built without `-tags pkcs11` is rejected at validation time.
 
 ### TLS Configuration
 

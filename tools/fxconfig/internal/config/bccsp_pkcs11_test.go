@@ -20,6 +20,7 @@ func TestMSPConfigToFactoryOpts_PKCS11(t *testing.T) {
 	mspCfg := MSPConfig{
 		ConfigPath: "/tmp/msp",
 		BCCSP: BCCSPConfig{
+			Default: "PKCS11",
 			PKCS11: BCCSPPKCS11Config{
 				Library:        "/usr/local/lib/libsofthsm2.so",
 				Label:          "TestLabel",
@@ -41,14 +42,16 @@ func TestMSPConfigToFactoryOpts_PKCS11(t *testing.T) {
 	require.Equal(t, "SHA2", opts.PKCS11.Hash)
 	require.Equal(t, 256, opts.PKCS11.Security)
 	require.True(t, opts.PKCS11.SoftwareVerify)
+	require.Nil(t, opts.SW, "SW opts must be nil when PKCS11 provider is selected")
 }
 
-func TestMSPConfigToFactoryOpts_PKCS11_DefaultsWhenLibrarySet(t *testing.T) {
+func TestMSPConfigToFactoryOpts_PKCS11_DefaultsHashAndSecurity(t *testing.T) {
 	t.Parallel()
 
 	mspCfg := MSPConfig{
 		ConfigPath: "/tmp/msp",
 		BCCSP: BCCSPConfig{
+			Default: "PKCS11",
 			PKCS11: BCCSPPKCS11Config{
 				Library: "/usr/local/lib/libsofthsm2.so",
 				Label:   "TestLabel",
@@ -65,14 +68,16 @@ func TestMSPConfigToFactoryOpts_PKCS11_DefaultsWhenLibrarySet(t *testing.T) {
 	require.Equal(t, 256, opts.PKCS11.Security)
 }
 
-func TestMSPConfigToFactoryOpts_PKCS11_NotActivatedWithoutLibrary(t *testing.T) {
+func TestMSPConfigToFactoryOpts_PKCS11_NotActivatedWithoutDefault(t *testing.T) {
 	t.Parallel()
 
+	// Library is set but Default is not "PKCS11" => SW path wins.
 	mspCfg := MSPConfig{
 		ConfigPath: "/tmp/msp",
 		BCCSP: BCCSPConfig{
 			PKCS11: BCCSPPKCS11Config{
-				Label: "only-label-without-library",
+				Library: "/usr/local/lib/libsofthsm2.so",
+				Label:   "should-be-ignored",
 			},
 		},
 	}
@@ -80,5 +85,6 @@ func TestMSPConfigToFactoryOpts_PKCS11_NotActivatedWithoutLibrary(t *testing.T) 
 	opts := mspCfg.ToFactoryOpts()
 
 	require.Equal(t, "SW", opts.Default)
+	require.NotNil(t, opts.SW)
 	require.Nil(t, opts.PKCS11)
 }

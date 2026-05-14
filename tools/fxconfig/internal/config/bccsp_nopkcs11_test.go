@@ -14,9 +14,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestMSPConfigToFactoryOpts_PKCS11_IgnoredWithoutTag verifies that PKCS#11
-// configuration is a no-op when the binary is built without -tags pkcs11.
-// The SW provider remains the default.
+// TestMSPConfigToFactoryOpts_PKCS11_IgnoredWithoutTag verifies that a
+// PKCS#11 sub-section is silently ignored when Default is not set to PKCS11
+// (the SW provider remains the default).
 func TestMSPConfigToFactoryOpts_PKCS11_IgnoredWithoutTag(t *testing.T) {
 	t.Parallel()
 

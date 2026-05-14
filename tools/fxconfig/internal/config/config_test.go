@@ -7,7 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package config
 
 import (
+	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -240,4 +242,35 @@ func TestMSPConfigToFactoryOpts_Overrides(t *testing.T) {
 	require.Equal(t, "SHA3", opts.SW.Hash)
 	require.NotNil(t, opts.SW.FileKeystore)
 	require.Equal(t, "/custom/keystore", opts.SW.FileKeystore.KeyStorePath)
+}
+
+// TestBCCSPPKCS11Config_String_RedactsPin verifies that the Pin field is
+// redacted in the string representation to prevent logging leakage.
+func TestBCCSPPKCS11Config_String_RedactsPin(t *testing.T) {
+	t.Parallel()
+
+	cfg := BCCSPPKCS11Config{
+		Library: "/lib/libsofthsm2.so",
+		Label:   "TokenLabel",
+		Pin:     "supersecret1234",
+		Hash:    "SHA2",
+	}
+
+	for _, s := range []string{cfg.String(), fmt.Sprintf("%v", cfg), fmt.Sprintf("%+v", cfg)} {
+		require.NotContains(t, s, "supersecret1234", "pin must not appear in %q", s)
+		require.Contains(t, s, "***")
+		require.Contains(t, s, "TokenLabel")
+		require.Contains(t, s, "/lib/libsofthsm2.so")
+	}
+}
+
+// TestBCCSPPKCS11Config_String_EmptyPin verifies that an empty Pin is rendered
+// as empty (not "***") so configs without an HSM pin are not misleading.
+func TestBCCSPPKCS11Config_String_EmptyPin(t *testing.T) {
+	t.Parallel()
+
+	cfg := BCCSPPKCS11Config{Library: "/lib/x.so"}
+	s := cfg.String()
+	require.Contains(t, s, "Pin:")
+	require.False(t, strings.Contains(s, "Pin:***"), "empty pin must not be rendered as ***, got: %s", s)
 }
